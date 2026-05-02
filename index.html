@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cookie Consent Audit Tool</title>
+<style>
+:root{--bg:#f4f6fb;--card:#fff;--primary:#4f46e5;--primary-dark:#4338ca;--danger:#dc2626;--warn:#f59e0b;--success:#16a34a;--text:#1e293b;--muted:#64748b;--border:#e2e8f0;--radius:12px;--shadow:0 4px 24px rgba(0,0,0,.08)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:32px 16px}
+h1{font-size:1.6rem;font-weight:800;color:var(--primary);margin-bottom:4px}
+.subtitle{color:var(--muted);font-size:.9rem;margin-bottom:28px;text-align:center}
+.cards{display:flex;flex-wrap:wrap;gap:16px;width:100%;max-width:900px;justify-content:center;margin-bottom:24px}
+.card{background:var(--card);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);width:100%;max-width:420px}
+.card h3{font-size:1rem;color:var(--primary);margin-bottom:12px}
+input{width:100%;padding:10px 14px;border:2px solid var(--border);border-radius:8px;font-size:.95rem;outline:none;transition:border-color .2s}
+input:focus{border-color:var(--primary)}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:10px 20px;background:var(--primary);color:#fff;border:none;border-radius:8px;font-size:.95rem;font-weight:600;cursor:pointer;transition:background .2s}
+.btn:hover{background:var(--primary-dark)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn-outline{background:transparent;border:2px solid var(--primary);color:var(--primary)}
+.btn-outline:hover{background:var(--primary);color:#fff}
+.btn-danger{background:var(--danger)}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.flex-1{flex:1;min-width:200px}
+.mode-toggle{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;justify-content:center}
+.mode-btn{padding:8px 16px;border:2px solid var(--border);background:var(--card);border-radius:8px;font-size:.85rem;font-weight:600;cursor:pointer;color:var(--muted);transition:all .2s}
+.mode-btn.active{border-color:var(--primary);background:var(--primary);color:#fff}
+.compare-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;width:100%;max-width:900px}
+@media(max-width:640px){.compare-grid{grid-template-columns:1fr}}
+.hidden{display:none}
+.status{padding:10px 14px;border-radius:8px;font-size:.85rem;font-weight:600;margin-top:10px;text-align:center}
+.status.loading{background:#fef3c7;color:#92400e}
+.status.error{background:#fee2e2;color:#991b1b}
+.status.ok{background:#dcfce7;color:#166534}
+.loader{border:3px solid var(--border);border-top-color:var(--primary);border-radius:50%;width:24px;height:24px;animation:spin .6s linear infinite;display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+.score-ring{width:120px;height:120px;margin:0 auto 16px;position:relative}
+.score-ring svg{transform:rotate(-90deg)}
+.score-ring circle{fill:none;stroke-width:10}
+.score-ring .bg{stroke:var(--border)}
+.score-ring .fg{stroke:var(--primary);stroke-linecap:round;transition:stroke-dashoffset 1s}
+.score-val{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:1.8rem;font-weight:800;color:var(--text)}
+.score-val small{font-size:.7rem;color:var(--muted);font-weight:600}
+.tracker-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;margin-top:16px}
+.tracker-card{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:14px}
+.tracker-card .name{font-weight:700;font-size:.95rem;margin-bottom:4px}
+.tracker-card .purpose{font-size:.82rem;color:var(--muted)}
+.tracker-card .badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:.7rem;font-weight:700;text-transform:uppercase}
+.tracker-card .badge.ok{background:#dcfce7;color:#166534}
+.tracker-card .badge.warn{background:#fef3c7;color:#92400e}
+.tracker-card .badge.fail{background:#fee2e2;color:#991b1b}
+.tracker-card .badge.neutral{background:#e0e7ff;color:#3730a3}
+.checklist{list-style:none;margin-top:12px}
+.checklist li{display:flex;align-items:center;gap:8px;padding:6px 0;font-size:.9rem;border-bottom:1px solid var(--border)}
+.checklist li:last-child{border:none}
+.check-icon{color:var(--success);font-size:1.1rem}
+.x-icon{color:var(--danger);font-size:1.1rem}
+.warn-icon{color:var(--warn);font-size:1.1rem}
+.history-item{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--bg);border-radius:8px;margin-bottom:8px;font-size:.85rem;gap:8px}
+.history-item .url-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+.history-item .score-chip{padding:2px 10px;border-radius:20px;font-weight:700;font-size:.8rem;color:#fff;flex-shrink:0}
+.history-item .del-btn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.1rem;padding:4px;flex-shrink:0}
+.history-item .del-btn:hover{color:var(--danger)}
+.report-section{margin-top:24px;width:100%;max-width:900px}
+.section-title{font-size:1.1rem;font-weight:700;color:var(--text);margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid var(--border)}
+.category-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.tag{display:inline-block;padding:3px 10px;border-radius:20px;font-size:.75rem;font-weight:600}
+.tag.functional{background:#dcfce7;color:#166534}
+.tag.analytics{background:#dbeafe;color:#1e40af}
+.tag.marketing{background:#fce7f3;color:#9d174d}
+.tag.preferences{background:#fef3c7;color:#92400e}
+.monetization{width:100%;max-width:900px;margin-top:32px;padding:20px;background:linear-gradient(135deg,#4f46e5,#7c3aed);border-radius:var(--radius);color:#fff;text-align:center}
+.monetization h3{margin-bottom:8px;font-size:1.1rem}
+.monetization p{font-size:.85rem;opacity:.9;margin-bottom:12px}
+.monetization a{color:#fef08a;font-weight:700;text-decoration:none}
+footer{text-align:center;color:var(--muted);font-size:.8rem;margin-top:40px;padding-bottom:20px}
+</style>
+</head>
+<body>
+
+<h1>🍪 Cookie Consent Audit Tool</h1>
+<p class="subtitle">Analizează GDPR compliance pentru orice site — detectează trackers, consent managers și generază compliance score</p>
+
+<div class="mode-toggle">
+  <button class="mode-btn active" id="modeSingle" onclick="setMode('single')">🔍 Analiză Single</button>
+  <button class="mode-btn" id="modeCompare" onclick="setMode('compare')">⚖️ Compară 2 Site-uri</button>
+  <button class="mode-btn" id="modeHistory" onclick="setMode('history')">📜 Istoric</button>
+</div>
+
+<!-- SINGLE MODE -->
+<div id="singleMode" class="card">
+  <h3>🔍 Introdu URL pentru audit</h3>
+  <div class="row">
+    <div class="flex-1">
+      <input type="url" id="urlInput" placeholder="https://exemplu.ro" value="">
+    </div>
+    <button class="btn" id="analyzeBtn" onclick="analyze()">
+      <span class="btn-label">Analizează</span>
+    </button>
+  </div>
+  <div id="singleStatus" class="hidden"></div>
+</div>
+
+<!-- COMPARE MODE -->
+<div id="compareMode" class="hidden">
+  <div class="compare-grid">
+    <div class="card">
+      <h3>🌐 Site A</h3>
+      <input type="url" id="urlA" placeholder="https://site-a.ro">
+    </div>
+    <div class="card">
+      <h3>🌐 Site B</h3>
+      <input type="url" id="urlB" placeholder="https://site-b.ro">
+    </div>
+  </div>
+  <div style="text-align:center;margin-top:16px">
+    <button class="btn" onclick="compare()">⚖️ Compară Site-urile</button>
+  </div>
+  <div id="compareStatus" class="hidden"></div>
+</div>
+
+<!-- HISTORY MODE -->
+<div id="historyMode" class="card hidden">
+  <h3>📜 Istoric Analize</h3>
+  <div id="historyList"></div>
+</div>
+
+<!-- RESULTS -->
+<div id="results" class="report-section hidden">
+  <div class="section-title" id="resultsTitle"></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start" class="report-grid">
+    <div class="card">
+      <div class="score-ring">
+        <svg width="120" height="120" viewBox="0 0 120 120">
+          <circle class="bg" cx="60" cy="60" r="50" stroke="#e2e8f0" stroke-width="10"/>
+          <circle class="fg" id="scoreCircle" cx="60" cy="60" r="50" stroke="#4f46e5" stroke-width="10" stroke-dasharray="314" stroke-dashoffset="314"/>
+        </svg>
+        <div class="score-val">
+          <span id="scoreNum">0</span>
+          <small>SCORE</small>
+        </div>
+      </div>
+      <div id="scoreLabel" style="text-align:center;font-weight:700;font-size:1.1rem;margin-bottom:8px"></div>
+      <ul class="checklist" id="checklist"></ul>
+    </div>
+    <div class="card">
+      <h3>🕵️ Trackers & Scripts Detectate</h3>
+      <div id="trackerList" class="tracker-grid"></div>
+    </div>
+  </div>
+  <div class="card" style="margin-top:16px">
+    <h3>🏷️ Categorii Cookie Detectate</h3>
+    <div id="categoryTags" class="category-tags"></div>
+  </div>
+  <div class="card" style="margin-top:16px">
+    <h3>🛡️ Consent Manager</h3>
+    <div id="consentManager"></div>
+  </div>
+  <button class="btn btn-outline" style="margin-top:16px" onclick="saveFavorite()">⭐ Salvează în Favorite</button>
+</div>
+
+<!-- COMPARE RESULTS -->
+<div id="compareResults" class="report-section hidden"></div>
+
+<div class="monetization">
+  <h3>📘 GDPR Compliance 2026 — eBook</h3>
+  <p>Ghid complet pentru Developers și Business Owners. Conține template-uri GDPR, checklist-uri, și studii de caz reale.</p>
+  <a href="https://garconai93.gumroad.com" target="_blank">📖 Citește pe Gumroad →</a>
+  <div style="margin-top:14px;font-size:.8rem;opacity:.8">
+    🔗 Links afiliate: <a href="https://amzn.to" target="_blank" style="color:#fef08a">Amazon GDPR Books</a> · <a href="https://www.emag.ro" target="_blank" style="color:#fef08a">eMag Cărți GDPR</a>
+  </div>
+</div>
+
+<footer>Cookie Consent Audit Tool &copy; 2026 · Nu suntem avocați. Consultă un specialist GDPR pentru cazul tău.</footer>
+
+<script>
+// ===== CONFIG =====
+const KNOWN_TRACKERS = {
+  'google-analytics.com':{name:'Google Analytics',category:'analytics',purpose:'Analiză trafic web, performanță pagini','_ga|__utma|__utm':true},
+  'googletagmanager.com':{name:'Google Tag Manager',category:'analytics',purpose:'Management tag-uri și scripts','_ga|__utm':true},
+  'googlesyndication.com':{name:'Google Ads',category:'marketing',purpose:'Publicitate bazată pe interese','_gads|_gac':true},
+  'doubleclick.net':{name:'DoubleClick / Google Display',category:'marketing',purpose:'Retargeting și publicitate display','IDE|__gads':true},
+  'facebook.net':{name:'Facebook Pixel',category:'marketing',purpose:'Tracking conversii Facebook/Meta ads','_fbp|fr|c_user':true},
+  'connect.facebook.net':{name:'Facebook SDK',category:'marketing',purpose:'Social login, butoane share, tracking','_fbp|datr':true},
+  'hotjar.com':{name:'Hotjar',category:'analytics',purpose:'Heatmaps și recording sesiuni','_hjSession':true},
+  'mixpanel.com':{name:'Mixpanel',category:'analytics',purpose:'Analiză comportament utilizatori','mp_|mixpanel':true},
+  'segment.io':{name:'Segment',category:'analytics',purpose:'Customer data platform','ajs_|seg':true},
+  'intercom.io':{name:'Intercom',category:'preferences',purpose:'Live chat și support','intercom':true},
+  'zendesk.com':{name:'Zendesk',category:'preferences',purpose:'Customer support chat','zendesk':true},
+  'drift.com':{name:'Drift',category:'preferences',purpose:'Live chat și bot','drift':true},
+  'hubspot.com':{name:'HubSpot',category:'marketing',purpose:'CRM tracking, email marketing','hubspotutk':true},
+  'mailchimp.com':{name:'Mailchimp',category:'marketing',purpose:'Email marketing automation','mailchimp':true},
+  'pardot.com':{name:'Pardot',category:'marketing',purpose:'B2B marketing automation','pi_|pardot':true},
+  'linkedin.com':{name:'LinkedIn Insight',category:'marketing',purpose:'Advertising și professional tracking','lidc|li_fat':true},
+  'twitter.com':{name:'Twitter / X Pixel',category:'marketing',purpose:'Advertising și analytics Twitter','_twq':true},
+  'tiktok.com':{name:'TikTok Pixel',category:'marketing',purpose:'Advertising pe TikTok','_tt_enable':true},
+  'snap.com':{name:'Snapchat Pixel',category:'marketing',purpose:'Advertising pe Snapchat','_scid':true},
+  'pinterest.com':{name:'Pinterest Tag',category:'marketing',purpose:'Advertising pe Pinterest','_pinterest':true},
+  'bing.com':{name:'Microsoft Clarity / Bing',category:'analytics',purpose:'Analiză și advertising','_uetvid':true},
+  'clarity.ms':{name:'Microsoft Clarity',category:'analytics',purpose:'Heatmaps și session recording','_clck':true},
+  'crazyegg.com':{name:'Crazy Egg',category:'analytics',purpose:'Heatmaps și click tracking','_ceg|ces':true},
+  'optimizely.com':{name:'Optimizely',category:'functional',purpose:'A/B testing','optimizely':true},
+  'newrelic.com':{name:'New Relic',category:'functional',purpose:'Application performance monitoring','NRBA':true},
+  'sentry.io':{name:'Sentry',category:'functional',purpose:'Error tracking și monitoring','sentry':true},
+  'logrocket.com':{name:'LogRocket',category:'analytics',purpose:'Session replay și UX analytics','_lr_env':true},
+  'amplitude.com':{name:'Amplitude',category:'analytics',purpose:'Product analytics','amp_|amplitude':true},
+  'heapanalytics.com':{name:'Heap',category:'analytics',purpose:'Auto-capture analytics','heap':true},
+  'fullstory.com':{name:'FullStory',category:'analytics',purpose:'Session replay și heatmaps','fs_uid':true},
+  'mouseflow.com':{name:'Mouseflow',category:'analytics',purpose:'Heatmaps și session recording','_mf':true},
+  'quantserve.com':{name:'Quantcast',category:'analytics',purpose:'Audience measurement','__qca':true},
+  'scorecardresearch.com':{name:'Scorecard Research',category:'analytics',purpose:'Market research și demographics','UID|CU':true},
+  'taboola.com':{name:'Taboola',category:'marketing',purpose:'Content recommendation și native ads','tb_click':true},
+  'outbrain.com':{name:'Outbrain',category:'marketing',purpose:'Content recommendation','obuid':true},
+  'pubmatic.com':{name:'PubMatic',category:'marketing',purpose:'Programmatic advertising','KRTBCOOKIE':true},
+  'rubiconproject.com':{name:'Rubicon Project',category:'marketing',purpose:'Ad exchange și programmatic','KRTBCOOKIE':true},
+  'amazon-adsystem.com':{name:'Amazon Ads',category:'marketing',purpose:'Advertising Amazon','_mkbattr':true},
+  'adsrvr.org':{name:'The Trade Desk',category:'marketing',purpose:'Programmatic advertising','TDID':true},
+  'casalemedia.com':{name:'Casale Media',category:'marketing',purpose:'Native și display advertising','CMID':true},
+  'adnxs.com':{name:'AppNexus / Xandr',category:'marketing',purpose:'Programmatic advertising','uuid2':true},
+  'openx.net':{name:'OpenX',category:'marketing',purpose:'Programmatic ad exchange','__udmx_':true},
+  'yandex.ru':{name:'Yandex Metrica',category:'analytics',purpose:'Web analytics Rusia/CEE','_ym|ya_counter':true},
+  'yahoo.com':{name:'Yahoo Analytics',category:'analytics',purpose:'Audience și advertising analytics','YSC|VISITOR':true},
+  'cookiebot.com':{name:'Cookiebot',category:'consent',purpose:'Consent management platform'},
+  'onetrust.com':{name:'OneTrust',category:'consent',purpose:'Consent management & privacy'},
+  'trustarc.com':{name:'TrustArc',category:'consent',purpose:'Privacy management platform'},
+  'trustpilot.com':{name:'Trustpilot',category:'analytics',purpose:'Reviews și customer feedback','Collect|feedback':true},
+  'addthis.com':{name:'AddThis',category:'marketing',purpose:'Social sharing și engagement tracking','uid|__atuvc':true},
+  'sharethis.com':{name:'ShareThis',category:'marketing',purpose:'Social sharing buttons tracking','__sharethis':true},
+  'dailymotion.com':{name:'Dailymotion',category:'marketing',purpose:'Video platform tracking','dam_ltv':true},
+  'vimeo.com':{name:'Vimeo',category:'functional',purpose:'Video embed și player tracking','vuid':true},
+  'youtube.com':{name:'YouTube Embed',category:'functional',purpose:'Video embed tracking','YSC|VISITOR':true},
+  'vimeo.com':{name:'Vimeo Embed',category:'functional',purpose:'Video embed tracking','vuid':true},
+  'cloudflare.com':{name:'Cloudflare',category:'functional',purpose:'CDN și security','__cfduid':true},
+  'cookielaw.org':{name:'OneTrust / CookieLaw',category:'consent',purpose:'Consent management platform'},
+};
+
+const CONSENT_MANAGERS = [
+  {name:'Cookiebot',domains:['cookiebot.com','cookiebot.eu'],description:'Consent manager GDPR/CCPA complet cu scanare automată cookies'},
+  {name:'OneTrust',domains:['onetrust.com','cookielaw.org'],description:'Enterprise privacy platform cu consent management și GDPR tools'},
+  {name:'TrustArc',domains:['trustarc.com'],description:'Privacy management și consent platform pentru enterprise'},
+  {name:'Usercentrics',domains:['usercentrics.eu','usercentrics.com'],description:'Consent management cu AI-powered cookie scanning'},
+  {name:'Osano',domains:['osano.com'],description:'Consent management platform open-source friendly'},
+  {name:'CookieYes',domains:['cookieyes.com'],description:'GDPR cookie consent simplu și accesibil'},
+  {name:'Termly',domains:['termly.io'],description:'Consent management și policy generator'},
+  {name:'Iubenda',domains:['iubenda.com'],description:'Privacy solutions pentru websites și apps'},
+];
+
+const CATEGORY_COLORS = {analytics:'tag analytics',marketing:'tag marketing',functional:'tag functional',preferences:'tag preferences'};
+
+// ===== STATE =====
+let currentMode = 'single';
+let currentReport = null;
+
+// ===== SCORING ALGORITHM =====
+function calculateScore(data){
+  let score = 100;
+  const {trackers=[],consentManager,hasBanner,hasPolicy,hasGranular,hasEasyOptOut} = data;
+
+  // Penalizează trackere fără consent
+  trackers.forEach(t => {
+    if(t.category !== 'consent' && t.category !== 'functional'){
+      score -= 4;
+    }
+  });
+
+  // Consent manager prezent = bonus mare
+  if(consentManager){
+    score = Math.min(100, score + 15);
+  } else {
+    score -= 20; // lipsă consent manager e penalizare serioasă
+  }
+
+  // Banner prezent
+  if(!hasBanner) score -= 15;
+
+  // Policy link
+  if(!hasPolicy) score -= 10;
+
+  // Granular opt-in
+  if(!hasGranular) score -= 8;
+
+  // Easy opt-out
+  if(!hasEasyOptOut) score -= 7;
+
+  return Math.max(0, Math.min(100, score));
+}
+
+function scoreLabel(s){
+  if(s >= 85) return {text:'✅ Excelent',color:'#16a34a'};
+  if(s >= 65) return {text:'⚠️ Bun',color:'#f59e0b'};
+  if(s >= 40) return {text:'🔶 Necesită Îmbunătățiri',color:'#f97316'};
+  return {text:'❌ Non-Compliant',color:'#dc2626'};
+}
+
+// ===== URL FETCH & PARSE =====
+async function fetchPage(url){
+  try {
+    const resp = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,{timeout:15000});
+    if(!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const data = await resp.json();
+    return data.contents || '';
+  } catch(e){
+    // fallback la proxy alternativ
+    try {
+      const resp2 = await fetch(`https://corsproxy.io/?${encodeURIComponent(url)}`,{timeout:15000});
+      return await resp2.text();
+    } catch{
+      throw new Error('Nu am putut prelua pagina. Verifică URL-ul sau încearcă mai târziu.');
+    }
+  }
+}
+
+function detectTrackers(html, url){
+  const found = [];
+  const lowerHtml = html.toLowerCase();
+  const domain = new URL(url).hostname.replace('www.','');
+
+  Object.entries(KNOWN_TRACKERS).forEach(([key,tracker]) => {
+    if(lowerHtml.includes(key)){
+      const hasCookies = tracker.cookiePattern && new RegExp(tracker.cookiePattern,'i').test(html);
+      found.push({
+        name: tracker.name,
+        category: tracker.category,
+        purpose: tracker.purpose,
+        domain: key,
+        hasCookies: !!tracker.cookiePattern,
+        risk: tracker.category === 'marketing' ? 'high' : tracker.category === 'analytics' ? 'medium' : 'low'
+      });
+    }
+  });
+
+  // Căutare script-uri generice cu patterns
+  const scriptSrcRegex = /src=["']([^"']+)["']/gi;
+  let match;
+  while((match = scriptSrcRegex.exec(html)) !== null){
+    const src = match[1].toLowerCase();
+    if(src.includes('pixel') || src.includes('tracking') || src.includes('analytics')){
+      const srcDomain = src.match(/https?:\/\/([^\/]+)/);
+      if(srcDomain && !found.some(f=>f.domain.includes(srcDomain[1]))){
+        found.push({
+          name: srcDomain[1],
+          category:'analytics',
+          purpose:'Script de tracking detectat',
+          domain: srcDomain[1],
+          hasCookies: true,
+          risk: 'medium'
+        });
+      }
+    }
+  }
+
+  // Detect iframe-uri third-party
+  const iframeRegex = /<iframe[^>]+src=["']([^"']+)["']/gi;
+  while((match = iframeRegex.exec(html)) !== null){
+    const src = match[1];
+    if(src.includes('facebook.com') || src.includes('youtube.com') || src.includes('maps.google')){
+      const srcDomain = src.match(/https?:\/\/([^\/]+)/);
+      if(srcDomain){
+        found.push({
+          name: `iframe: ${srcDomain[1]}`,
+          category:'embedding',
+          purpose:'Continut embeddin third-party',
+          domain: srcDomain[1],
+          hasCookies: false,
+          risk: 'low'
+        });
+      }
+    }
+  }
+
+  return found;
+}
+
+function detectConsentManager(html, url){
+  const lowerHtml = html.toLowerCase();
+  const domain = new URL(url).hostname;
+
+  for(const cm of CONSENT_MANAGERS){
+    if(cm.domains.some(d=>lowerHtml.includes(d))){
+      return {name: cm.name, description: cm.description, found: true};
+    }
+  }
+
+  // Căutare heuristici consent banner
+  const consentPatterns = [
+    /cookie.*consent/i,/accept.*cookies/i,/gdpr/i,/privacy.*policy/i,
+    /cookie.*policy/i,/marketing.*cookies/i,/analytics.*consent/i
+  ];
+  const hasBannerPattern = consentPatterns.some(p=>p.test(html));
+
+  return {name:null,description: null, found: !!hasBannerPattern};
+}
+
+function checkCompliance(html){
+  const lower = html.toLowerCase();
+  return {
+    hasBanner: /cookie.*banner|cookie.*consent|cookie.*notice|accept.*cookie|cookies?.*accept/i.test(lower),
+    hasPolicy: /cookie.*policy|privacy.*policy|privacy.*notice|politica.*confidentialitate/i.test(lower),
+    hasGranular: /opt-in|optin|allow.*select|choose.*cookies| granular/i.test(lower),
+    hasEasyOptOut: /opt-out|optout|reject.*all|refuse.*all|withdraw.*consent|decline/i.test(lower)
+  };
+}
+
+function detectCookieCategories(trackers){
+  const cats = new Set();
+  trackers.forEach(t=> cats.add(t.category));
+  return Array.from(cats);
+}
+
+// ===== ANALYZE =====
+async function analyze(){
+  const url = document.getElementById('urlInput').value.trim();
+  if(!url){ alert('Te rugăm să introduci un URL valid.'); return; }
+
+  const btn = document.getElementById('analyzeBtn');
+  const status = document.getElementById('singleStatus');
+  btn.disabled = true;
+  status.className = 'status loading';
+  status.textContent = '⏳ Se preia pagina și se analizează trackers...';
+  status.classList.remove('hidden');
+
+  try {
+    const html = await fetchPage(url);
+    const trackers = detectTrackers(html, url);
+    const consent = detectConsentManager(html, url);
+    const compliance = checkCompliance(html);
+    const categories = detectCookieCategories(trackers);
+    const score = calculateScore({trackers, consentManager: consent.found ? consent.name : null,...compliance});
+
+    currentReport = {url, trackers, consent, compliance, categories, score, timestamp: Date.now()};
+
+    document.getElementById('results').classList.remove('hidden');
+    document.getElementById('resultsTitle').textContent = `📋 Raport: ${url}`;
+    renderResults(currentReport);
+
+    status.className = 'status ok';
+    status.textContent = '✅ Analiză completă!';
+
+    saveToHistory(currentReport);
+
+  } catch(e){
+    status.className = 'status error';
+    status.textContent = '❌ Eroare: ' + e.message;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function compare(){
+  const urlA = document.getElementById('urlA').value.trim();
+  const urlB = document.getElementById('urlB').value.trim();
+
+  if(!urlA || !urlB){ alert('Completează ambele URL-uri.'); return; }
+
+  const status = document.getElementById('compareStatus');
+  status.className = 'status loading';
+  status.textContent = '⏳ Se compară cele 2 site-uri...';
+  status.classList.remove('hidden');
+
+  try {
+    const [htmlA, htmlB] = await Promise.all([fetchPage(urlA), fetchPage(urlB)]);
+
+    const reportA = buildReport(urlA, htmlA);
+    const reportB = buildReport(urlB, htmlB);
+
+    renderCompare(reportA, reportB);
+    status.className = 'status ok';
+    status.textContent = '✅ Comparație completă!';
+
+  } catch(e){
+    status.className = 'status error';
+    status.textContent = '❌ Eroare: ' + e.message;
+  }
+}
+
+function buildReport(url, html){
+  const trackers = detectTrackers(html, url);
+  const consent = detectConsentManager(html, url);
+  const compliance = checkCompliance(html);
+  const categories = detectCookieCategories(trackers);
+  const score = calculateScore({trackers, consentManager: consent.found ? consent.name : null,...compliance});
+  return {url, trackers, consent, compliance, categories, score, timestamp: Date.now()};
+}
+
+// ===== RENDER =====
+function renderResults(report){
+  // Score ring
+  const pct = report.score / 100;
+  const circ = document.getElementById('scoreCircle');
+  const offset = 314 * (1 - pct);
+  circ.setAttribute('stroke-dashoffset', offset);
+  const color = scoreLabel(report.score).color;
+  circ.setAttribute('stroke', color);
+
+  document.getElementById('scoreNum').textContent = report.score;
+  const lbl = scoreLabel(report.score);
+  const slEl = document.getElementById('scoreLabel');
+  slEl.textContent = lbl.text;
+  slEl.style.color = lbl.color;
+
+  // Checklist
+  const cl = document.getElementById('checklist');
+  const checks = [
+    {ok: report.consent.found, text:`Consent manager detectat${report.consent.name ? ': '+report.consent.name : ''}`},
+    {ok: report.compliance.hasBanner, text:'Consent banner prezent'},
+    {ok: report.compliance.hasPolicy, text:'Link către cookie/privacy policy'},
+    {ok: report.compliance.hasGranular, text:'Opt-in granular (selectare categorii individuale)'},
+    {ok: report.compliance.hasEasyOptOut, text:'Posibilitate ușoară de opt-out (reject all)'},
+    {ok: report.trackers.filter(t=>t.category==='marketing').length===0, text:'Fără marketing trackers (fără consent)'},
+    {ok: report.trackers.filter(t=>t.category==='analytics').length===0, text:'Fără analytics trackers (fără consent)'},
+  ];
+  cl.innerHTML = checks.map(c=>`
+    <li>${c.ok ? '<span class="check-icon">✅</span>' : '<span class="x-icon">❌</span>'}
+      <span style="color:${c.ok ? 'var(--text)' : 'var(--danger)'}">${c.text}</span>
+    </li>`).join('');
+
+  // Trackers
+  const tl = document.getElementById('trackerList');
+  if(report.trackers.length === 0){
+    tl.innerHTML = '<p style="color:var(--muted);font-size:.9rem">✅ Niciun tracker third-party detectat!</p>';
+  } else {
+    tl.innerHTML = report.trackers.map(t=>`
+      <div class="tracker-card">
+        <div class="name">${t.name}</div>
+        <div class="purpose">${t.purpose}</div>
+        <div style="margin-top:6px">
+          <span class="badge ${t.risk==='high'?'fail':t.risk==='medium'?'warn':'neutral'}">${t.risk} risk</span>
+          <span class="badge neutral" style="margin-left:4px">${t.category}</span>
+        </div>
+      </div>`).join('');
+  }
+
+  // Category tags
+  const ct = document.getElementById('categoryTags');
+  ct.innerHTML = report.categories.map(c=>`<span class="tag ${CATEGORY_COLORS[c]||'tag functional'}">${c}</span>`).join('');
+
+  // Consent manager
+  const cmEl = document.getElementById('consentManager');
+  if(report.consent.found && report.consent.name){
+    cmEl.innerHTML = `<div class="status ok">✅ <strong>${report.consent.name}</strong> — ${report.consent.description}</div>`;
+  } else if(report.consent.found){
+    cmEl.innerHTML = `<div class="status warn">⚠️ Posibil consent banner detectat, dar nu am putut identifica managerul specific.</div>`;
+  } else {
+    cmEl.innerHTML = `<div class="status error">❌ Lipsă consent manager detectat. Website-ul nu pare să folosească o platformă GDPR compliantă.</div>`;
+  }
+}
+
+function renderCompare(a,b){
+  const cr = document.getElementById('compareResults');
+  cr.classList.remove('hidden');
+  cr.innerHTML = `
+    <div class="section-title">⚖️ Comparație: ${a.url} vs ${b.url}</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px" class="compare-grid">
+      ${renderCompareCard(a)}
+      ${renderCompareCard(b)}
+    </div>
+  `;
+
+  // Comparison summary
+  const diff = a.score - b.score;
+  let summary = '';
+  if(diff > 10) summary = `<div class="status ok" style="margin-top:16px">🌟 <strong>${a.url}</strong> are un compliance score cu ${diff} puncte mai mare!</div>`;
+  else if(diff < -10) summary = `<div class="status ok" style="margin-top:16px">🌟 <strong>${b.url}</strong> are un compliance score cu ${Math.abs(diff)} puncte mai mare!</div>`;
+  else summary = `<div class="status loading" style="margin-top:16px">⚖️ Ambele site-uri au scoruri apropiate (diferență de ${Math.abs(diff)} puncte).</div>`;
+
+  cr.innerHTML += summary;
+}
+
+function renderCompareCard(report){
+  const lbl = scoreLabel(report.score);
+  return `
+    <div class="card">
+      <h3 style="font-size:.95rem;word-break:break-all">${report.url}</h3>
+      <div style="text-align:center;margin:16px 0">
+        <div style="font-size:2.5rem;font-weight:800;color:${lbl.color}">${report.score}</div>
+        <div style="color:${lbl.color};font-weight:700;font-size:.9rem">${lbl.text}</div>
+      </div>
+      <div style="font-size:.8rem;color:var(--muted);margin-bottom:8px">${report.trackers.length} trackers detectați · ${report.consent.found && report.consent.name ? report.consent.name : 'fără consent manager'}</div>
+      <ul class="checklist">
+        <li>${report.consent.found?'✅':'❌'} Banner consent</li>
+        <li>${report.compliance.hasPolicy?'✅':'❌'} Privacy policy</li>
+        <li>${report.compliance.hasGranular?'✅':'❌'} Opt-in granular</li>
+        <li>${report.compliance.hasEasyOptOut?'✅':'❌'} Opt-out ușor</li>
+      </ul>
+      ${report.trackers.length > 0 ? `<div style="margin-top:10px;font-size:.8rem;font-weight:700;color:var(--muted)">Trackers:</div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px">
+          ${report.trackers.map(t=>`<span class="badge ${t.risk==='high'?'fail':t.risk==='medium'?'warn':'neutral'}" style="font-size:.7rem">${t.name}</span>`).join('')}
+        </div>` : ''}
+    </div>`;
+}
+
+// ===== HISTORY =====
+function saveToHistory(report){
+  let history = JSON.parse(localStorage.getItem('cookieAuditHistory') || '[]');
+  // Dedupe by URL
+  history = history.filter(h=>h.url !== report.url);
+  history.unshift(report);
+  history = history.slice(0,20);
+  localStorage.setItem('cookieAuditHistory', JSON.stringify(history));
+}
+
+function loadHistory(){
+  const list = document.getElementById('historyList');
+  const history = JSON.parse(localStorage.getItem('cookieAuditHistory') || '[]');
+  if(history.length === 0){
+    list.innerHTML = '<p style="color:var(--muted);font-size:.9rem">Nicio analiză salvată încă.</p>';
+    return;
+  }
+  list.innerHTML = history.map((h,i)=>{
+    const lbl = scoreLabel(h.score);
+    return `<div class="history-item">
+      <span class="url-name" title="${h.url}">${h.url}</span>
+      <span class="score-chip" style="background:${lbl.color}">${h.score}</span>
+      <button class="del-btn" onclick="deleteHistory(${i})" title="Șterge">🗑️</button>
+    </div>`;
+  }).join('');
+}
+
+function deleteHistory(idx){
+  let history = JSON.parse(localStorage.getItem('cookieAuditHistory') || '[]');
+  history.splice(idx,1);
+  localStorage.setItem('cookieAuditHistory', JSON.stringify(history));
+  loadHistory();
+}
+
+function saveFavorite(){
+  if(!currentReport) return;
+  let favorites = JSON.parse(localStorage.getItem('cookieAuditFavorites') || '[]');
+  if(!favorites.some(f=>f.url===currentReport.url)){
+    favorites.unshift(currentReport);
+    localStorage.setItem('cookieAuditFavorites', JSON.stringify(favorites));
+    alert('⭐ Salvat în favorite!');
+  } else {
+    alert('Deja în favorite!');
+  }
+}
+
+// ===== MODE SWITCHING =====
+function setMode(mode){
+  currentMode = mode;
+  ['single','compare','history'].forEach(m=>{
+    document.getElementById(m+'Mode').classList.toggle('hidden', m!==mode && mode!=='single');
+    document.getElementById('mode'+m.charAt(0).toUpperCase()+m.slice(1)).classList.toggle('active', m===mode);
+  });
+  document.getElementById('results').classList.add('hidden');
+  document.getElementById('compareResults').classList.add('hidden');
+
+  if(mode === 'history') loadHistory();
+}
+</script>
+</body>
+</html>
